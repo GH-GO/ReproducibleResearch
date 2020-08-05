@@ -1,0 +1,196 @@
+---
+title: "Reproducible Research Peer-graded Assignment: Course Project 1"
+output: github_document
+---
+
+#### Setting global option to turn warnings off
+
+```{r}
+knitr::opts_chunk$set(warning=FALSE)
+```
+
+# Loading and preprocessing the data
+
+## Read tabular data into R
+
+```{r}
+MyData<-read.csv('activity.csv', header = TRUE, sep = ",")
+```
+
+## Get the class of the vector
+```{r}
+for (i in 1:3) {
+  print(paste('Class of df',class(MyData))) #class of the full dataset 
+  print(paste('Class of column',i,class(MyData[,i]))) #class of the single columns
+}
+```
+
+## Transform column with dates from characters into dates
+
+```{r include=FALSE}
+library(lubridate)
+```
+
+```{r}
+MyData$date<-ymd(MyData$date)
+```
+
+```{r include=FALSE}
+library(dplyr)
+```
+
+## Exclude the missing observations
+```{r}
+MyDataNA <-MyData %>%
+  na.omit()	
+```
+
+## Size df with NA
+```{r}
+dim(MyData)
+```
+## Size df without NA
+```{r}
+dim(MyDataNA)
+```
+
+# 1. What is mean total number of steps taken per day?
+```{r}
+StepsByDay <- aggregate(cbind(steps)~date,
+                   data=MyDataNA,FUN=sum)
+
+hist (StepsByDay$steps,
+main="Histogram of steps by day",
+xlab="Steps by day",
+border="Green",
+col="Orange",
+breaks=10)
+	
+```
+
+## Mean total number of steps taken per day
+```{r}
+MyDataNA.mean <-  mean(StepsByDay$steps)
+MyDataNA.mean
+```
+
+## Median of the total number of steps taken per day
+```{r}
+MyDataNA.median <-  median(StepsByDay$steps)
+MyDataNA.median
+```
+
+# 2. What is the average daily activity pattern?
+```{r}
+AvgStepsByInt <- aggregate(cbind(steps)~interval,
+                        data=MyDataNA,FUN=mean)
+
+plot(AvgStepsByInt$interval, AvgStepsByInt$steps, 
+     type = "l",
+     main = "Average daily activity pattern",
+     xlab = "Interval",
+     ylab = "Avg. Steps by Interval")  
+```
+
+## Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+```{r}
+IdxMaxInt=which.max(AvgStepsByInt$steps) # find index of the max
+
+AvgStepsByInt$interval[IdxMaxInt] #5-minute interval cointaining the max
+```
+# 3. Imputing missing values
+## There are a number of days/intervals where there are missing values (coded as NA). The presence of missing days may introduce bias into some calculations or summaries of the data.
+
+## 1 Calculate and report the total number of missing values in the dataset(i.e. the total number of rows with NA)
+
+```{r}
+#list of NA for each column
+na_count <-sapply(MyData, function(y) sum(length(which(is.na(y)))))
+na_count <- data.frame(na_count)
+na_count 
+```
+
+## Filling-in all of the missing values in the dataset with the mean for that day
+```{r }
+MyDataFilled<-MyData #  new dataset with the missing data filled in.
+MyDataFilled$steps[is.na(MyDataFilled$steps)]<-mean(MyDataFilled$steps, na.rm = T)
+
+```
+
+## Make a histogram of the total number of steps taken each day 
+
+## Total number of steps taken per day 
+```{r}
+NewStepsByDay <- aggregate(cbind(steps)~date,
+                        data=MyDataFilled,FUN=sum)
+```
+
+
+
+## Histogram of the total number of steps taken each day 
+
+```{r}
+hist (NewStepsByDay$steps,
+      main="Histogram of steps by day with NA filled-in",
+      xlab="Steps by day",
+      border="Green",
+      col="Blue",
+      breaks=10)
+```
+
+### Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+## Mean of the total number of steps taken per day
+```{r}
+MyDataFilled.mean <-  mean(NewStepsByDay$steps)
+MyDataFilled.mean
+```
+
+## Median of the total number of steps taken per day
+
+```{r}
+MyDataFilled.median <-  median(NewStepsByDay$steps)
+MyDataFilled.median
+```
+
+# 4. Are there differences in activity patterns between weekdays and weekends?
+
+## Create a new factor variable in the dataset with two levels - "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
+
+```{r}
+MyDataWeek <-MyDataFilled
+MyDataWeek$dateweek
+MyDataWeek$dateweek <- weekdays(MyDataWeek$date) 
+
+MyDataWeek$datetype <- sapply(MyDataWeek$date, function(x) {
+  if (weekdays(x) == "Saturday" | weekdays(x) =="Sunday") 
+  {y <- "Weekend"} else 
+  {y <- "Weekday"}
+  y
+})
+```
+```{r include=FALSE}
+library(ggplot2)
+```
+
+
+```{r}
+
+MyDataWeekDays <- aggregate(steps~interval + datetype, MyDataWeek, mean, na.rm = TRUE)
+plot<- ggplot(MyDataWeekDays, aes(x = interval , y = steps, color = datetype)) +
+  geom_line() +
+  labs(title = "Average daily steps by type of date", x = "Interval", y = "Average number of steps") +
+  facet_wrap(~datetype, ncol = 1, nrow=2)
+print(plot)
+```
+
+
+
+
+
+
+
+
+
+
+
