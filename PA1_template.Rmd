@@ -1,6 +1,6 @@
 ---
 title: "Reproducible Research Peer-graded Assignment: Course Project 1"
-output: github_document
+output: html_document
 ---
 
 #### Setting global option to turn warnings off
